@@ -54,8 +54,9 @@ for epoch in range(num_epochs):
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # 测试模型
+test = torch.tensor([[0,0], [1,1], [2,2]], dtype=torch.float32).to(device)
 with torch.no_grad():
-    outputs = model(X_train)
+    outputs = model(test)
     predicted = torch.round(outputs)
     print(f'Predicted: {predicted.squeeze().tolist()}')
 ###  绘图
