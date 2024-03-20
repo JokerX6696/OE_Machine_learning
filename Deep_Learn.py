@@ -76,7 +76,8 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc='lower right')
-plt.show()
+plt.savefig('D:/desk/github/OE_Machine_learning/AUC.png')
+
     
 ####################################################
 # 保存模型参数
