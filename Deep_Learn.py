@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+from torch.optim.lr_scheduler import StepLR
 ##################  超参
 
 ##################
@@ -32,6 +33,8 @@ model = MLP().to(device)
 criterion = nn.BCELoss()  # 二分类任务使用二元交叉熵损失函数
 optimizer = optim.Adam(model.parameters(), lr=0.01)  # Adam优化器
 
+# 定义学习率调度器
+scheduler = StepLR(optimizer, step_size=100, gamma=0.1)  # 每隔100个epoch将学习率缩小为原来的0.1倍
 # 训练模型
 num_epochs = 1000
 for epoch in range(num_epochs):
@@ -43,6 +46,8 @@ for epoch in range(num_epochs):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+    # 更新学习率
+    scheduler.step()
 
     # 打印训练信息
     if (epoch+1) % 100 == 0:
