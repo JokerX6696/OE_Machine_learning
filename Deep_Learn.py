@@ -50,10 +50,34 @@ for epoch in range(num_epochs):
 
 # 测试模型
 with torch.no_grad():
-    outputs = model(X_train).to(device)
+    outputs = model(X_train)
     predicted = torch.round(outputs)
     print(f'Predicted: {predicted.squeeze().tolist()}')
+###  绘图
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
 
+# 获取模型在训练集上的预测概率值
+with torch.no_grad():
+    outputs = model(X_train).cpu().numpy()
+    predicted_prob = outputs.squeeze()
+
+# 计算训练集上的 AUC
+fpr, tpr, thresholds = roc_curve(y_train.cpu().numpy(), predicted_prob)
+roc_auc = auc(fpr, tpr)
+
+# 绘制 AUC 曲线
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc='lower right')
+plt.show()
+    
 ####################################################
 # 保存模型参数
 torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/model.pth')
