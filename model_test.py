@@ -19,7 +19,7 @@ x = x.reindex(y.index)
 x.drop(columns=[1,2,3,4,5], inplace=True)
 # 处理 x 转化为 数值
 x = x.replace(" ","",regex=True)
-x = x.replace({"00":1311,"AA":0, "AT":1, "AC":2, "AG":3, "TA":4, "TT":5, "TC":6, "TG":7, "CA":8, "CT":9, "CC":10, "CG":11, "GA":12, "GT":13, "GC":14, "GG":15},regex=True)
+x = x.replace({"00":1311,"AA":0, "AT":1, "TA":1,"AC":2, "CA":2, "AG":3, "GA":3, "TT":4, "TC":5, "CT":5, "TG":6, "GT":6, "CC":7, "CG":8, "GC":8, "GG":9},regex=True)
 
 
 x_list = [] ; y_list = []
@@ -82,3 +82,17 @@ with torch.no_grad():
         for k in j:
             ret.append(int(k))
     print("Predictions:", ret)
+
+
+# 保存整体表格
+scz = []
+for j in y_train:
+    for k in j:
+        scz.append(k)
+predicted_list = predicted.cpu().squeeze().tolist()
+index_list = y.index.to_list()
+ret_list = ret
+scz_list = [elem.item() for elem in scz]
+df = {'sample': index_list, 'score': ret_list, 'class': scz_list, 'predicted': predicted_list}
+df_ret = pd.DataFrame(df)
+df_ret.to_csv('D:/desk/github/OE_Machine_learning/predict.xls',index=False,sep='\t')
