@@ -6,16 +6,16 @@ import numpy as np
 from torch.optim.lr_scheduler import StepLR
 import pandas as pd
 ### 参数
-x_file = 'D:/desk/github/OE_Machine_learning/data/human_snp460_sample1250.ped'  # 特征值
-y_file = 'D:/desk/github/OE_Machine_learning/data/overall_pheno.xls'  # 结果
+x_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/human_snp460_sample1250.ped'  # 特征值
+y_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/overall_pheno.xls'  # 结果
 ##################  超参
 
 ##################
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # 定义数据集
-x_file = 'D:/desk/github/OE_Machine_learning/data/human_snp460_sample1250.ped'
-y_file = 'D:/desk/github/OE_Machine_learning/data/overall_pheno.xls'
+x_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/human_snp460_sample1250.ped'
+y_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/overall_pheno.xls'
 
 x = pd.read_csv(x_file,sep='\t',header=None,index_col=0)
 x = x.rename_axis('sample')
@@ -127,12 +127,12 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc='lower right')
-plt.savefig('D:/desk/github/OE_Machine_learning/Training_set_AUC.png')
+plt.savefig('D:/desk/github/OE_Machine_learning/SNP2RSB/Training_set_AUC.png')
 
     
 ####################################################
 # 保存模型参数
-torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/model.pth')
+torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/SNP2RSB/model.pth')
 print("Model has been saved.")
 # 保存整体表格
 scz = []
@@ -145,7 +145,7 @@ ret_list = ret
 scz_list = [elem.item() for elem in scz]
 df = {'sample': index_list, 'score': ret_list, 'class': scz_list, 'predicted': predicted_list}
 df_ret = pd.DataFrame(df)
-df_ret.to_csv('D:/desk/github/OE_Machine_learning/predict.xls',index=False,sep='\t')
+df_ret.to_csv('D:/desk/github/OE_Machine_learning/SNP2RSB/predict.xls',index=False,sep='\t')
 exit()
 # # 加载模型参数
 # loaded_model = MLP()
