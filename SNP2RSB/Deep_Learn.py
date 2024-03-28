@@ -6,17 +6,16 @@ import numpy as np
 from torch.optim.lr_scheduler import StepLR
 import pandas as pd
 ### 参数
-x_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/human_snp460_sample1250.ped'  # 特征值
-y_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/overall_pheno.xls'  # 结果
+x_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/human_snp460_sample1250.ped'  # 特征值
+y_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/overall_pheno.xls'  # 结果
+x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp.ped'  # 特征值
+y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
 ##################  超参
 
 ##################
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# 定义数据集
-x_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/human_snp460_sample1250.ped'
-y_file = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/overall_pheno.xls'
-
+# 定义训练数据集
 x = pd.read_csv(x_file,sep='\t',header=None,index_col=0)
 x = x.rename_axis('sample')
 y = pd.read_csv(y_file,sep='\t',header=0,index_col=0)
@@ -57,7 +56,43 @@ for i in ret:
     
 X_train = torch.tensor(x_list, dtype=torch.float32).to(device)
 y_train = torch.tensor(y_list, dtype=torch.float32).to(device)
+# 定义测试数据集
+x2 = pd.read_csv(x_file_test,sep='\t',header=None,index_col=0)
+x2 = x2.rename_axis('sample')
+y2 = pd.read_csv(y_file_test,sep='\t',header=0,index_col=0,encoding='gbk')
+y2.index=[i.strip() for i in y2.index.to_list()]
+y2=y2.rename_axis('sample')
+x2 = x2.reindex(y2.index)
 
+x2.drop(columns=[1,2,3,4,5], inplace=True)
+# 处理 x 转化为 数值
+x2 = x2.replace(" ","",regex=True)
+x2 = x2.replace({"00":1311,"AA":0, "AT":1, "TA":1,"AC":2, "CA":2, "AG":3, "GA":3, "TT":4, "TC":5, "CT":5, "TG":6, "GT":6, "CC":7, "CG":8, "GC":8, "GG":9},regex=True)
+
+
+x2_list = [] ; y2_list = []
+for index, row in x2.iterrows():
+    temp = row.to_list()
+    x2_list.append(temp)
+
+
+for j in x2_list:
+    for k in j:
+        if not is_numeric(k):
+            print('特征值文件 错误 出现了缺失值！')
+            exit()
+
+ret = y2[y2.columns[0]].to_list()
+for i in ret:
+    if i >= 40:
+        y2_list.append([1])
+    elif i < 40:
+        y2_list.append([0])
+    else:
+        print('结果文件 错误 出现了缺失值！')
+        exit()
+X_test = torch.tensor(x2_list, dtype=torch.float32).to(device)
+y_test = torch.tensor(y2_list, dtype=torch.float32).to(device)
 # 定义多层感知机模型
 class MLP(nn.Module):
     def __init__(self):
