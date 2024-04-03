@@ -78,11 +78,19 @@ def get_tensor(x_file,y_file):
 
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# 随机选取特征值 num_tzz 个
+numbers = list(range(0, snp_num))
+tzz_sel = random.sample(numbers, num_tzz)
+
 X_train,y_train,_,_ = get_tensor(x_file=x_file_train,y_file=y_file_train)
+X_train = [X_train[i] for i in tzz_sel]
+y_train = [y_train[i] for i in tzz_sel]
 X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
 y_train = torch.tensor(y_train, dtype=torch.float32).to(device)
 
 X_test,y_test,x,y = get_tensor(x_file=x_file_test,y_file=y_file_test)
+X_test = [X_test[i] for i in tzz_sel]
+y_test = [y_test[i] for i in tzz_sel]
 X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
 y_test = torch.tensor(y_test, dtype=torch.float32).to(device)
 
@@ -152,7 +160,7 @@ print("Model has been saved.")
 
 predicted_list = predicted.cpu().squeeze().tolist()
 index_list = y.index.to_list()
-ret_list = y['心率体温综合评分'].to_list()
+ret_list = [y['心率体温综合评分'].to_list()[i] for i in tzz_sel]
 scz = []
 for j in ret_list:
     if j < 40:
