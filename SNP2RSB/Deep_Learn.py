@@ -8,13 +8,16 @@ import pandas as pd
 import random
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc,roc_auc_score
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
 ### 参数
+wk_dir = 'D:/desk/github/OE_Machine_learning/SNP2RSB'
 x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/human_snp460_sample1250.ped'  # 特征值
 y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/overall_pheno.xls'  # 结果
 x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp.ped'  # 特征值
 y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
 ##################  超参
-num_epoch = 500
+num_epoch = 1000
 lr = 0.001
 snp_num = 454
 num_tzz = 50
@@ -24,9 +27,9 @@ foreach_num = 1000
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(snp_num, snp_num)  # 输入层到隐藏层的全连接层
-        self.fc2 = nn.Linear(snp_num, 256)  # 隐藏层到隐藏层的全连接层
-        self.fc3 = nn.Linear(256, 1)  # 隐藏层到输出层的全连接层
+        self.fc1 = nn.Linear(num_tzz, num_tzz)  # 输入层到隐藏层的全连接层
+        self.fc2 = nn.Linear(num_tzz, 64)  # 隐藏层到隐藏层的全连接层
+        self.fc3 = nn.Linear(64, 1)  # 隐藏层到输出层的全连接层
         self.relu = nn.ReLU()  # 激活函数
     def forward(self, x):
         x = self.relu(self.fc1(x))  # 第一层全连接 + 激活
@@ -78,21 +81,10 @@ def get_tensor(x_file,y_file):
 
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# 随机选取特征值 num_tzz 个
-numbers = list(range(0, snp_num))
-tzz_sel = random.sample(numbers, num_tzz)
 
+# 获取特征值
 X_train,y_train,_,_ = get_tensor(x_file=x_file_train,y_file=y_file_train)
-X_train = [X_train[i] for i in tzz_sel]
-y_train = [y_train[i] for i in tzz_sel]
-X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
-y_train = torch.tensor(y_train, dtype=torch.float32).to(device)
-
 X_test,y_test,x,y = get_tensor(x_file=x_file_test,y_file=y_file_test)
-X_test = [X_test[i] for i in tzz_sel]
-y_test = [y_test[i] for i in tzz_sel]
-X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
-y_test = torch.tensor(y_test, dtype=torch.float32).to(device)
 
 
 # 实例化模型、损失函数和优化器
@@ -103,79 +95,101 @@ optimizer = optim.Adam(model.parameters(), lr=lr)  # Adam优化器
 # 定义学习率调度器
 scheduler = StepLR(optimizer, step_size=100, gamma=0.8)  # 每隔100个epoch将学习率缩小为原来的0.1倍
 # 训练模型
+auc_max = 0
+num_xl = 0
+fo = open(wk_dir + 'train_log.txt','w')
 num_epochs = num_epoch
-for epoch in range(num_epochs):
-    # 前向传播
-    outputs = model(X_train)
-    loss = criterion(outputs, y_train)
+while num_xl < foreach_num:
+    # 随机选取特征值 num_tzz 个
+    numbers = list(range(0, snp_num))
+    tzz_sel = random.sample(numbers, num_tzz)
+    X_train_part = [[j[i] for i in tzz_sel] for j in X_train]
+    y_train_part = y_train
+    X_test_part = [[j[i] for i in tzz_sel] for j in X_test]
+    y_test_part = y_test
+    X_train_part = torch.tensor(X_train_part, dtype=torch.float32).to(device)
+    y_train_part = torch.tensor(y_train_part, dtype=torch.float32).to(device)
+    X_test_part = torch.tensor(X_test_part, dtype=torch.float32).to(device)
+    y_test_part = torch.tensor(y_test_part, dtype=torch.float32).to(device)
+    for epoch in range(num_epochs):
+        # 前向传播
+        outputs = model(X_train_part)
+        loss = criterion(outputs, y_train_part)
 
-    # 反向传播和优化
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    # 更新学习率
-    #scheduler.step()
+        # 反向传播和优化
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        # 更新学习率
+        #scheduler.step()
 
-    # 打印训练信息
-    if (epoch+1) % 100 == 0:
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+        # 打印训练信息
+        if (epoch+1) % 100 == 0:
+            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
-# 测试模型
-# test = torch.tensor([[0,0], [1,1], [2,2]], dtype=torch.float32).to(device)
-with torch.no_grad():
-    outputs = model(X_test)
-    predicted = torch.round(outputs)
-    # print(f'Predicted: {predicted.squeeze().tolist()}')
-###  绘图
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc
+    # 测试模型
+    # test = torch.tensor([[0,0], [1,1], [2,2]], dtype=torch.float32).to(device)
+    with torch.no_grad():
+        outputs = model(X_test_part)
+        predicted = torch.round(outputs)
+        # print(f'Predicted: {predicted.squeeze().tolist()}')
 
-# 获取模型在训练集上的预测概率值
-with torch.no_grad():
-    outputs = model(X_test).cpu().numpy()
-    predicted_prob = outputs.squeeze()
 
-# 计算训练集上的 AUC
-fpr, tpr, thresholds = roc_curve(y_test.cpu().numpy(), predicted_prob)
-roc_auc = auc(fpr, tpr)
+    # 获取模型在训练集上的预测概率值
+    with torch.no_grad():
+        outputs = model(X_test_part).cpu().numpy()
+        predicted_prob = outputs.squeeze()
+    # 计算训练集上的 AUC
+    fpr, tpr, thresholds = roc_curve(y_test, predicted_prob)
+    roc_auc = auc(fpr, tpr)
+    y_test_numpy = y_test
+    auc_value = roc_auc_score(y_test_numpy, predicted_prob)
 
-# 绘制 AUC 曲线
-plt.figure()
-plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic')
-plt.legend(loc='lower right')
-plt.savefig('D:/desk/github/OE_Machine_learning/SNP2RSB/Training_set_AUC.png')
+    # # 计算训练集上的 AUC
+    # fpr, tpr, thresholds = roc_curve(y_test_part.cpu().numpy(), predicted_prob)
+    # roc_auc = auc(fpr, tpr)
+    if auc_value > auc_max:
+        print(f"特征值位点：{tzz_sel}\nauc:{auc_value}",file=fo)
+        # 绘制 AUC 曲线
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc='lower right')
+        plt.savefig('D:/desk/github/OE_Machine_learning/SNP2RSB/Training_set_AUC.png')
+        ####################################################
+        # 保存模型参数
+        torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/SNP2RSB/model.pth')
+        print("Model has been saved.")
+        #  保存整体表格
+        predicted_list = predicted.cpu().squeeze().tolist()
+        index_list = y.index.to_list()
+        ret_list = y['心率体温综合评分'].to_list()
+        scz = []
+        for j in ret_list:
+            if j < 40:
+                scz.append(0)
+            else:
+                scz.append(1)
+        
+        df = {'sample': index_list, 'score': ret_list, 'class': scz, 'predicted': predicted_list}
+        df_ret = pd.DataFrame(df)
+        df_ret.to_csv('D:/desk/github/OE_Machine_learning/SNP2RSB/predict.xls',index=False,sep='\t')
 
-    
-####################################################
-# 保存模型参数
-torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/SNP2RSB/model.pth')
-print("Model has been saved.")
-#  保存整体表格
-
-predicted_list = predicted.cpu().squeeze().tolist()
-index_list = y.index.to_list()
-ret_list = [y['心率体温综合评分'].to_list()[i] for i in tzz_sel]
-scz = []
-for j in ret_list:
-    if j < 40:
-        scz.append(0)
-    else:
-        scz.append(1)
-df = {'sample': index_list, 'score': ret_list, 'class': scz, 'predicted': predicted_list}
-df_ret = pd.DataFrame(df)
-df_ret.to_csv('D:/desk/github/OE_Machine_learning/SNP2RSB/predict.xls',index=False,sep='\t')
-
-all_pre = len(scz)
-pos = 0
-for i in range(0,all_pre):
-    if predicted_list[i] == scz[i]:
-        pos += 1
-ret = pos/all_pre
-print(f"预测准确率为 {ret}")
+        all_pre = len(scz)
+        pos = 0
+        for i in range(0,all_pre):
+            if predicted_list[i] == scz[i]:
+                pos += 1
+        ret = pos/all_pre
+        
+        auc_max = auc_value
+    print(f"预测准确率为 {ret}")
+    print(f"AUC={auc_value}")
+    num_xl += 1
+fo.close  
 
