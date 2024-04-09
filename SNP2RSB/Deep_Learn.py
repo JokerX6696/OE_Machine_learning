@@ -18,10 +18,10 @@ x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp
 y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
 ##################  超参
 num_epoch = 1000
-lr = 0.001
+lr = 0.0001
 snp_num = 454
-num_tzz = 50
-foreach_num = 1000
+num_tzz = 70
+foreach_num = 500
 ###################
 # 定义多层感知机模型
 class MLP(nn.Module):
@@ -97,7 +97,7 @@ scheduler = StepLR(optimizer, step_size=100, gamma=0.8)  # 每隔100个epoch将�
 # 训练模型
 auc_max = 0
 num_xl = 0
-fo = open(wk_dir + 'train_log.txt','w')
+fo = open(wk_dir + '/train_log.txt','w')
 num_epochs = num_epoch
 while num_xl < foreach_num:
     # 随机选取特征值 num_tzz 个
@@ -111,6 +111,7 @@ while num_xl < foreach_num:
     y_train_part = torch.tensor(y_train_part, dtype=torch.float32).to(device)
     X_test_part = torch.tensor(X_test_part, dtype=torch.float32).to(device)
     y_test_part = torch.tensor(y_test_part, dtype=torch.float32).to(device)
+    losses = []
     for epoch in range(num_epochs):
         # 前向传播
         outputs = model(X_train_part)
@@ -122,10 +123,12 @@ while num_xl < foreach_num:
         optimizer.step()
         # 更新学习率
         #scheduler.step()
-
+        # 记录损失值
+        losses.append(loss.item())
         # 打印训练信息
         if (epoch+1) % 100 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+            
 
     # 测试模型
     # test = torch.tensor([[0,0], [1,1], [2,2]], dtype=torch.float32).to(device)
@@ -150,6 +153,14 @@ while num_xl < foreach_num:
     # roc_auc = auc(fpr, tpr)
     if auc_value > auc_max:
         print(f"特征值位点：{tzz_sel}\nauc:{auc_value}",file=fo)
+        # 绘制损失函数的收敛曲线
+        plt.plot(losses, label='Training Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training Loss Convergence')
+        plt.legend()
+        plt.savefig(wk_dir + '/loss_curve.png')
+        plt.close()
         # 绘制 AUC 曲线
         plt.figure()
         plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
@@ -161,6 +172,7 @@ while num_xl < foreach_num:
         plt.title('Receiver Operating Characteristic')
         plt.legend(loc='lower right')
         plt.savefig('D:/desk/github/OE_Machine_learning/SNP2RSB/Training_set_AUC.png')
+        plt.close()
         ####################################################
         # 保存模型参数
         torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/SNP2RSB/model.pth')
