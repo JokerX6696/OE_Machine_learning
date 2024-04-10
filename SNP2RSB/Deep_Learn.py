@@ -17,19 +17,20 @@ y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/overall_ph
 x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp.ped'  # 特征值
 y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
 ##################  超参
+Threshold = 40
 num_epoch = 1000
-lr = 0.0001
+lr = 0.001
 snp_num = 454
-num_tzz = 70
+num_tzz = 144
 foreach_num = 500
 ###################
 # 定义多层感知机模型
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(num_tzz, num_tzz)  # 输入层到隐藏层的全连接层
-        self.fc2 = nn.Linear(num_tzz, 64)  # 隐藏层到隐藏层的全连接层
-        self.fc3 = nn.Linear(64, 1)  # 隐藏层到输出层的全连接层
+        self.fc1 = nn.Linear(num_tzz, 64)  # 输入层到隐藏层的全连接层
+        self.fc2 = nn.Linear(64, 32)  # 隐藏层到隐藏层的全连接层
+        self.fc3 = nn.Linear(32, 1)  # 隐藏层到输出层的全连接层
         self.relu = nn.ReLU()  # 激活函数
     def forward(self, x):
         x = self.relu(self.fc1(x))  # 第一层全连接 + 激活
@@ -68,9 +69,9 @@ def get_tensor(x_file,y_file):
                 exit()
     ret = y[y.columns[0]].to_list()
     for i in ret:
-        if i >= 40:
+        if i >= Threshold:
             y_list.append([1])
-        elif i < 40:
+        elif i < Threshold:
             y_list.append([0])
         else:
             print('结果文件 错误 出现了缺失值！')
@@ -87,19 +88,18 @@ X_train,y_train,_,_ = get_tensor(x_file=x_file_train,y_file=y_file_train)
 X_test,y_test,x,y = get_tensor(x_file=x_file_test,y_file=y_file_test)
 
 
-# 实例化模型、损失函数和优化器
-model = MLP().to(device)
-criterion = nn.BCELoss()  # 二分类任务使用二元交叉熵损失函数
-optimizer = optim.Adam(model.parameters(), lr=lr)  # Adam优化器
-
 # 定义学习率调度器
-scheduler = StepLR(optimizer, step_size=100, gamma=0.8)  # 每隔100个epoch将学习率缩小为原来的0.1倍
+# scheduler = StepLR(optimizer, step_size=100, gamma=0.8)  # 每隔100个epoch将学习率缩小为原来的0.1倍
 # 训练模型
 auc_max = 0
 num_xl = 0
 fo = open(wk_dir + '/train_log.txt','w')
 num_epochs = num_epoch
 while num_xl < foreach_num:
+    # 实例化模型、损失函数和优化器
+    model = MLP().to(device)
+    criterion = nn.BCELoss()  # 二分类任务使用二元交叉熵损失函数
+    optimizer = optim.Adam(model.parameters(), lr=lr)  # Adam优化器
     # 随机选取特征值 num_tzz 个
     numbers = list(range(0, snp_num))
     tzz_sel = random.sample(numbers, num_tzz)
@@ -183,7 +183,7 @@ while num_xl < foreach_num:
         ret_list = y['心率体温综合评分'].to_list()
         scz = []
         for j in ret_list:
-            if j < 40:
+            if j < Threshold:
                 scz.append(0)
             else:
                 scz.append(1)
