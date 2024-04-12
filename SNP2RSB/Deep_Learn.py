@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc,roc_auc_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-### 参数
+### 参数 
 wk_dir = 'D:/desk/github/OE_Machine_learning/SNP2RSB'
 x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/human_snp460_sample1250.ped'  # 特征值
 y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/overall_pheno.xls'  # 结果
