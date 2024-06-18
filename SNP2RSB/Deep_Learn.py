@@ -21,7 +21,7 @@ Threshold = 40
 num_epoch = 1000
 lr = 0.001
 snp_num = 454
-num_tzz = 144
+num_tzz = 60
 foreach_num = 500
 ###################
 # 定义多层感知机模型
