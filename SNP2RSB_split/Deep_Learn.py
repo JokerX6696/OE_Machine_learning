@@ -11,9 +11,9 @@ from sklearn.metrics import roc_curve, auc,roc_auc_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 ### 参数 
-wk_dir = 'D:/desk/github/OE_Machine_learning/SNP2RSB'
-x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/human_snp460_sample1250.ped'  # 特征值
-y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/train/overall_pheno.xls'  # 结果
+wk_dir = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/'
+x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/train/heart_rate_score_build.ped'  # 特征值
+y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/train/overall_pheno.xls'  # 结果
 x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp.ped'  # 特征值
 y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
 ##################  超参
