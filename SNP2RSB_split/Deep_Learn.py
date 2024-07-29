@@ -12,16 +12,16 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 ### 参数 
 wk_dir = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/'
-x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/train/heart_rate_score_build.ped'  # 特征值
+x_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/train/new.ped'  # 特征值
 y_file_train = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/train/overall_pheno.xls'  # 结果
-x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/data2_460snp.ped'  # 特征值
-y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB/data/test/overall_pheno.xls'  # 结果
+x_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/test/new.ped'  # 特征值
+y_file_test = 'D:/desk/github/OE_Machine_learning/SNP2RSB_split/data/test/overall_pheno.xls'  # 结果
 ##################  超参
 Threshold = 40
-num_epoch = 1000
+num_epoch = 1500
 lr = 0.001
-snp_num = 454
-num_tzz = 60
+snp_num = 446
+num_tzz = 46
 foreach_num = 500
 ###################
 # 定义多层感知机模型
@@ -48,13 +48,17 @@ def get_tensor(x_file,y_file):
     # 定义训练数据集
     x = pd.read_csv(x_file,sep='\t',header=None,index_col=0)
     x = x.rename_axis('sample')
+    x = x.dropna()
     try:
         y = pd.read_csv(y_file,sep='\t',header=0,index_col=0)
     except UnicodeDecodeError:
         y = pd.read_csv(y_file,sep='\t',header=0,index_col=0,encoding='gbk')
     y=y.rename_axis('sample')
+    y = y.dropna()
+    y = y.reindex(index=x.index).dropna()
     x = x.reindex(y.index)
     x.drop(columns=[1,2,3,4,5], inplace=True)
+    x = x.dropna()
     # 处理 x 转化为 数值
     x = x.replace(" ","",regex=True)
     x = x.replace({"00":1311,"AA":0, "AT":1, "TA":1,"AC":2, "CA":2, "AG":3, "GA":3, "TT":4, "TC":5, "CT":5, "TG":6, "GT":6, "CC":7, "CG":8, "GC":8, "GG":9},regex=True)
@@ -68,6 +72,7 @@ def get_tensor(x_file,y_file):
                 print('特征值文件 错误 出现了缺失值！')
                 exit()
     ret = y[y.columns[0]].to_list()
+
     for i in ret:
         if i >= Threshold:
             y_list.append([1])
@@ -171,16 +176,16 @@ while num_xl < foreach_num:
         plt.ylabel('True Positive Rate')
         plt.title('Receiver Operating Characteristic')
         plt.legend(loc='lower right')
-        plt.savefig('D:/desk/github/OE_Machine_learning/SNP2RSB/Training_set_AUC.png')
+        plt.savefig(wk_dir + '/Training_set_AUC.png')
         plt.close()
         ####################################################
         # 保存模型参数
-        torch.save(model.state_dict(), 'D:/desk/github/OE_Machine_learning/SNP2RSB/model.pth')
+        torch.save(model.state_dict(), wk_dir + '/model.pth')
         print("Model has been saved.")
         #  保存整体表格
         predicted_list = predicted.cpu().squeeze().tolist()
         index_list = y.index.to_list()
-        ret_list = y['心率体温综合评分'].to_list()
+        ret_list = y['心率评分'].to_list()
         scz = []
         for j in ret_list:
             if j < Threshold:
@@ -190,7 +195,7 @@ while num_xl < foreach_num:
         
         df = {'sample': index_list, 'score': ret_list, 'class': scz, 'predicted': predicted_list}
         df_ret = pd.DataFrame(df)
-        df_ret.to_csv('D:/desk/github/OE_Machine_learning/SNP2RSB/predict.xls',index=False,sep='\t')
+        df_ret.to_csv(wk_dir + '/predict.xls',index=False,sep='\t')
 
         all_pre = len(scz)
         pos = 0
@@ -200,7 +205,7 @@ while num_xl < foreach_num:
         ret = pos/all_pre
         
         auc_max = auc_value
-    print(f"预测准确率为 {ret}")
+    # print(f"预测准确率为 {ret}")
     print(f"AUC={auc_value}")
     num_xl += 1
 fo.close  
